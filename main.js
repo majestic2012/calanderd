@@ -48,7 +48,7 @@ var ivo = (function() {
 
 	// data storage object
 	var $data = {
-		dev: (process.env.CALENDARD === 'dev'),
+		dev: (process.env.calendard === 'dev'),
 		events: [],
 		hasRoom: false,
 		hasEvents: false,
@@ -57,6 +57,7 @@ var ivo = (function() {
 			morse: /^M\d+[a-z]?$/,
 			voice: /^[EGSV]\d+[a-z]?$/
 		},
+		room: process.env.calendard === 'dev' ? config.dev.room : config.room,
 		station: {
 			digital: [ 'FSK 200/500', 'FSK 200/1000', 'XPA', 'XPA2', 'POL FSK', 'HM01' ]
 		},
@@ -85,17 +86,17 @@ var ivo = (function() {
 		};
 	})();
 
-	var $client = new irc.Client(config.server, config.botName, {
-		userName: config.userName || 'ivo',
-		realName: config.realName || 'Ivo L Schwarz',
-		port: config.port || 7000,
-		password: config.password || '',
+	var $client = new irc.Client($data.dev ? config.dev.server : config.server, $data.dev ? config.dev.botName : config.botName, {
+		userName: $data.dev ? config.dev.userName : config.userName,
+		realName: $data.dev ? config.dev.realName : config.realName,
+		port: $data.dev ? config.dev.port : config.port,
+		password: $data.dev ? config.dev.password : config.password,
 		sasl: true,
 		showErrors: true,
 		autoConnect: false,
 		retryDelay: 4000,
 		retryCount: 1000,
-		secure: config.tls || true
+		secure: $data.dev ? config.dev.tls : config.tls
 	});
 
 	// function storage object
@@ -264,7 +265,7 @@ var ivo = (function() {
 				return (header + formattedEvents.join(" • "));
 			},
 			sayNext: function() {
-				if ($data.hasRoom) return $client.say(config.room, $func.events.getNextEvent());
+				if ($data.hasRoom) return $client.say($data.room, $func.events.getNextEvent());
 			},
 			update: function() {
 				var newEvents = [];
@@ -444,7 +445,7 @@ var ivo = (function() {
 		$client.connect(5, function (input) {
 			$log.log('calendard on server');
 
-			$client.join(config.room, function (input) {
+			$client.join($data.room, function (input) {
 				$data.hasRoom = true;
 
 				$log.log('channel connection is ready!');
@@ -456,7 +457,7 @@ var ivo = (function() {
 				if ($data.hasRoom) setTimeout($func.announcements.check, 5000);
 			});
 		});
-		$client.addListener('message' + config.room, function (from, to, message) {
+		$client.addListener('message' + $data.room, function (from, to, message) {
 			var arg = message.args[1];
 			switch(arg) {
 				case '!next':
@@ -465,27 +466,27 @@ var ivo = (function() {
 					$func.events.sayNext();
 					break;
 				case '!stream':         
-					$client.say(config.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
+					$client.say($data.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
 					break;
 				case '!link':
-					$client.say(config.room, $func.stations.link(arg.trim()));
+					$client.say($data.room, $func.stations.link(arg.trim()));
 					break;
 				case '!listen':
-					$client.say(config.room, 'http://websdr.ewi.utwente.nl:8901/');
+					$client.say($data.room, 'http://websdr.ewi.utwente.nl:8901/');
 					break;
 				case '!reload':
-					$client.say(config.room, 'Reloading...');
+					$client.say($data.room, 'Reloading...');
 					$log.log('refreshing events list...');
 					$func.client.getCalendarData();
 					break;
 				case '!why':
-					$client.say(config.room, 'The Buzzer is not audible at this time of the day in the Netherlands due to HF propagation characteristics. Try again later in the local evening.');
+					$client.say($data.room, 'The Buzzer is not audible at this time of the day in the Netherlands due to HF propagation characteristics. Try again later in the local evening.');
 					break;
 				case '!new':
-					$client.say(config.room, 'You can visit our site at http://priyom.org where we have a good read regarding any and all information about logged numbers stations.');
+					$client.say($data.room, 'You can visit our site at http://priyom.org where we have a good read regarding any and all information about logged numbers stations.');
 					break;
 				case '!rules':
-					$client.say(config.room, 'http://priyom.org/about/irc-rules');
+					$client.say($data.room, 'http://priyom.org/about/irc-rules');
 					break;
 			}
 		});
