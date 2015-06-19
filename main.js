@@ -167,10 +167,21 @@ var ivo = (function() {
 				});
 			},
 			onHttpReturn: function( events ) {
-				$log.log("number of events found: " + events.length);
-				$log.log("time of first event: " + events[0].start.dateTime);
+				function compareTimes( a, b ) {
+					if (a.startTime < b.startTime) return -1;
+					if (a.startTime > b.startTime) return 1;
+					return 0;
+				};
+				$log.log('sorting events...');
+				events.sort(compareTimes);
+
+				$log.log('number of events found: ' + events.length);
+				$log.log('time of first event: ' + events[0].start.dateTime);
+				// flush event cache
+				$log.log('flushing old event cache...');
+				$data.events = [];
 				// flush old timers so we don't have multiple messages
-				$log.log("flushing old timers...");
+				$log.log('flushing old timers...');
 				$func.events.flushTimers();
 
 				events.forEach(function(evt) {
