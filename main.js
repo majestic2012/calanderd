@@ -48,6 +48,7 @@ var ivo = (function() {
 
 	// data storage object
 	var $data = {
+		dev: (process.env.CALENDARD === 'dev'),
 		events: [],
 		hasRoom: false,
 		hasEvents: false,
@@ -151,14 +152,13 @@ var ivo = (function() {
 						data += chunk;
 					});
 					res.on('end', function () {
-						var obj = JSON.parse(data);
-						//
-						// STUBS for development since we don't have the API key
-						//
-						/*var obj = {
-							// @dev1 -- if you want events with the same trigger time, add boolean true parameter to getEvents()
+						var obj = $data.dev ? {
+							//
+							// STUBS for development since we don't have the API key
+							//
+							// if you want events with the same trigger time, add boolean true parameter to getEvents()
 							items: $func.__dev.getEvents(6)
-						};*/
+						} : JSON.parse(data);
 						if (typeof(obj) !== 'object' || $func.util.type(obj.items) !== 'array') $log.error('$func.client.getCalendarData(): improper return object. cannot proceed ['+JSON.stringify(obj)+']');
 						$func.client.onHttpReturn(obj.items);
 					});
@@ -168,8 +168,8 @@ var ivo = (function() {
 			},
 			onHttpReturn: function( events ) {
 				function compareTimes( a, b ) {
-					if (a.startTime < b.startTime) return -1;
-					if (a.startTime > b.startTime) return 1;
+					if (a.start.dateTime < b.start.dateTime) return -1;
+					if (a.start.dateTime > b.start.dateTime) return 1;
 					return 0;
 				};
 				$log.log('sorting events...');
