@@ -21,5 +21,18 @@ var config = module.exports = {
 	announceEarly: 1 * 60000, // ms
 
 	// calendar limits
-	maxResults: 150 // at least 2
+	maxResults: 150, // at least 2
+
+	// these options are for testing, by doing something like:
+	//    calendard=dev node ./main.js
+	dev: {
+		room: '#priyom',
+		server: 'chat.freenode.net',
+		botName: 'jummyristle',
+		userName: 'foo',
+		realName: 'bar',
+		password: '',
+		port: 7000,
+		tls: true
+	}
 };
