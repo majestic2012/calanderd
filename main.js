@@ -151,14 +151,14 @@ var ivo = (function() {
 						data += chunk;
 					});
 					res.on('end', function () {
-						//var obj = JSON.parse(data);
+						var obj = JSON.parse(data);
 						//
 						// STUBS for development since we don't have the API key
 						//
-						var obj = {
+						/*var obj = {
 							// @dev1 -- if you want events with the same trigger time, add boolean true parameter to getEvents()
 							items: $func.__dev.getEvents(6)
-						};
+						};*/
 						if (typeof(obj) !== 'object' || $func.util.type(obj.items) !== 'array') $log.error('$func.client.getCalendarData(): improper return object. cannot proceed ['+JSON.stringify(obj)+']');
 						$func.client.onHttpReturn(obj.items);
 					});
