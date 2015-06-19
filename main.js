@@ -25,8 +25,6 @@ var ivo = (function() {
 		var open = true;
 		var fire = function() {
 			$func.events.sayNext();
-			open = true;
-			flush();
 		};
 		var flush = function() {
 			events = [];
@@ -36,6 +34,8 @@ var ivo = (function() {
 				open = false;
 				setTimeout(function() {
 					fire();
+					open = true;
+					flush();
 				}, 2500);
 			}
 			events.push(evt);
@@ -94,7 +94,7 @@ var ivo = (function() {
 		autoConnect: false,
 		retryDelay: 4000,
 		retryCount: 1000,
-		secure: config.tls || true,
+		secure: config.tls || true
 	});
 
 	// function storage object
@@ -106,16 +106,21 @@ var ivo = (function() {
 				function _getEvent( time ) {
 					return {
 						start: {
-							dateTime: new Date(new Date().getTime()+time*1000)
+							dateTime: new Date(Math.floor(new Date().getTime()+time*1000))
 						},
-						summary: Math.floor(Math.random()*15000)+' kHz '+(['USB/AM','USB','LSB','AM','CW','MCW'][Math.floor(Math.random()*6)])
+						summary: (['M12','HM01','S06'][Math.floor(Math.random()*3)])+' '+Math.floor(Math.random()*15000)+' kHz '+(['USB/AM','USB','LSB','AM','CW','MCW'][Math.floor(Math.random()*6)])
 					};
+				};
+				function compare( a, b ) {
+					if (a.startTime < b.startTime) return -1;
+					if (a.startTime > b.startTime) return 1;
+					return 0;
 				};
 				var num = $func.util.type(num) !== 'number' ? 6 : num;
 				var special = $func.util.type(special) !== 'boolean' ? false : special;
 				var events = [];
-				for (var i=0,len=num; i<len; i++, events.push(_getEvent( (special ? 60 : Math.floor(Math.random()*300)) )));
-				return events;
+				for (var i=0,len=num; i<len; i++, events.push(_getEvent( (special ? 120 : (Math.floor(Math.random()*5)+2)*60) )));
+				return events.sort(compare);
 			}
 		},
 		announcements: {
@@ -146,14 +151,14 @@ var ivo = (function() {
 						data += chunk;
 					});
 					res.on('end', function () {
-						var obj = JSON.parse(data);
+						//var obj = JSON.parse(data);
 						//
 						// STUBS for development since we don't have the API key
 						//
-						/*var obj = {
+						var obj = {
 							// @dev1 -- if you want events with the same trigger time, add boolean true parameter to getEvents()
 							items: $func.__dev.getEvents(6)
-						};*/
+						};
 						if (typeof(obj) !== 'object' || $func.util.type(obj.items) !== 'array') $log.error('$func.client.getCalendarData(): improper return object. cannot proceed ['+JSON.stringify(obj)+']');
 						$func.client.onHttpReturn(obj.items);
 					});
@@ -169,7 +174,7 @@ var ivo = (function() {
 				$func.events.flushTimers();
 
 				events.forEach(function(evt) {
-					var timer = evt.eventDate - 60000 - new Date().getTime();
+					var timer = new Date(evt.start.dateTime).getTime() - 60000 - new Date().getTime();
 					// if the event will occur in less than sixty seconds, send message now
 					if (timer < 60000) timer = 0;
 					var event = {
@@ -180,7 +185,7 @@ var ivo = (function() {
 						timer: null
 					};
 					event.timer = setTimeout(function() {
-						$aggregator.push(event);
+						if ($data.hasRoom) $aggregator.push(event);
 					}, timer);
 					$data.events.push(event);
 				});
@@ -225,7 +230,7 @@ var ivo = (function() {
 				var formattedEvents = [];
 
 				nextEvents.forEach(function(evt) {
-					var format = $func.format.event(evt.title);			
+					var format = $func.format.event(evt.title);
 					if (typeof(evt.frequency) !== 'undefined' && evt.frequency.length > 3) {
 						var freq = evt.frequency;
 						var mode = '';
