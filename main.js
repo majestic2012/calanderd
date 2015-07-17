@@ -200,11 +200,12 @@ var ivo = (function() {
 					var timer = new Date(evt.start.dateTime).getTime() - 60000 - new Date().getTime();
 					// if the event will occur in less than sixty seconds, send message now
 					if (timer < 60000) timer = 0;
+					var info = $func.extract.info(evt.summary);
 					var event = {
 						eventDate: new Date(evt.start.dateTime),
 						title: evt.summary,
-						frequency: $func.extract.frequency(evt.summary),
-						mode: $func.extract.mode(evt.summary),
+						frequency: info[0],
+						mode: info[1],
 						timer: null
 					};
 					event.timer = setTimeout(function() {
@@ -295,16 +296,13 @@ var ivo = (function() {
 			}
 		},
 		extract: {
-			frequency: function( textToMatch ) {
+			info: function( textToMatch ) {
 				// Without this the frequency marked as "last used" is given as a link.
 				// Which is misleading as fuck.
 				if ($func.util.type(textToMatch) !== 'string') $log.error('$func.extract.frequency(): incorrect parameters!');
-				return textToMatch.indexOf("Search") > -1 ? true : textToMatch.match(/(\d+) ?kHz/i)[1];
-			},
-			mode: function( textToMatch ) {
-				if ($func.util.type(textToMatch) !== 'string') $log.error('$func.extract.mode(): incorrect parameters!');
-				var result = textToMatch.match(/AM|USB\/AM|USB|LSB|CW|MCW/i);
-				return result != null && result.length && result.length > 0 ? result[1] : '';
+				if (textToMatch.indexOf(" Search ") > -1) return [ undefined, undefined ];
+				var result = textToMatch.match(/(\d+) ?[kK][hH][zZ]((.*?[kK][hH][zZ])?? ([A-Z][A-Z/]+))?/);
+				return result != null ? [ result[1], result[4] ] : [ undefined, undefined ];
 			}
 		},
 		format: {
