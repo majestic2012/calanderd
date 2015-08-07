@@ -288,7 +288,7 @@ var ivo = (function() {
 			mode: function( textToMatch ) {
 				if ($func.util.type(textToMatch) !== 'string') $log.error('$func.extract.mode(): incorrect parameters!');
 				var result = textToMatch.match(/AM|USB\/AM|USB|LSB|CW|MCW/i);
-				return result.length && result.length > 0 ? result[1] : '';
+				return result != null && result.length && result.length > 0 ? result[1] : '';
 			}
 		},
 		format: {
