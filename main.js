@@ -1,6 +1,6 @@
 
 /**
- * calendard 0.3
+ * calendard 0.3.0
  * Licensed under GPLv3
  * Written for #priyom on freenode (priyom.org) by Tomáš Hetmer.
  * With additions by danix111, MilesPrower, linkfanel, L0j1k.
@@ -287,7 +287,8 @@ var ivo = (function() {
 			},
 			mode: function( textToMatch ) {
 				if ($func.util.type(textToMatch) !== 'string') $log.error('$func.extract.mode(): incorrect parameters!');
-				return textToMatch.match(/AM|USB\/AM|USB|LSB|CW|MCW/i)[1];
+				var result = textToMatch.match(/AM|USB\/AM|USB|LSB|CW|MCW/i);
+				return result.length && result.length > 0 ? result[1] : '';
 			}
 		},
 		format: {
