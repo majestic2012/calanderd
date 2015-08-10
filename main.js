@@ -48,6 +48,7 @@ var ivo = (function() {
 
 	// data storage object
 	var $data = {
+		data: (process.env.calendard_data === 'mock' ? 'mock' : 'google'),
 		dev: (process.env.calendard === 'dev'),
 		events: [],
 		hasRoom: false,
@@ -145,7 +146,7 @@ var ivo = (function() {
 					"&maxResults=" + 
 					config.maxResults;
 				https.get($data.calendarUrl, function (res) {
-					$log.log('  - http request got statusCode: ', res.statusCode);
+					$log.log('  - http request got statusCode: ' + res.statusCode);
 
 					var data = '';
 
@@ -153,7 +154,7 @@ var ivo = (function() {
 						data += chunk;
 					});
 					res.on('end', function () {
-						var obj = $data.dev ? {
+						var obj = $data.data === 'mock' ? {
 							//
 							// STUBS for development since we don't have the API key
 							//
@@ -322,9 +323,12 @@ var ivo = (function() {
 			}
 		},
 		stations: {
-			link: function( station ) {
+			link: function( stn ) {
+				// grab the first element from the given arguments list
+				if (typeof(stn) !== 'string') return false;
+
 				// avoid pissing people off, veryu
-				station = station.toLowerCase();
+				var station = typeof(stn.toLowerCase) === 'function' && stn.toLowerCase();
 
 				var milBase = 'http://priyom.org/military-stations/';
 				var diploBase = 'http://priyom.org/diplomatic-stations/';
@@ -438,11 +442,13 @@ var ivo = (function() {
 		('Boolean Number String Function Array Date RegExp Object Error'.split(' ').forEach(function(name, i) {
 			$data.types['[object ' + name + ']'] = name.toLowerCase();
 		}));
+		$log.log('running in state: ' + ($data.dev ? 'dev' : 'prod'));
+		$log.log('using data of type: ' + $data.data);
 	})();
 
 	var main = function() {
 		// connecting client to irc...
-		$log.log('connecting to irc...')
+		$log.log('connecting to irc (channel '+$data.room+')...')
 		$client.connect(5, function (input) {
 			$log.log('calendard on server');
 
@@ -459,8 +465,9 @@ var ivo = (function() {
 			});
 		});
 		$client.addListener('message' + $data.room, function (from, to, message) {
-			var arg = message.args[1];
-			switch(arg) {
+			var args = message.args[1].split(' ');
+			var cmd = args[0];
+			switch(cmd) {
 				case '!next':
 				case '!n':
 					$log.log('received next command from ' + from);
@@ -470,7 +477,8 @@ var ivo = (function() {
 					$client.say($data.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
 					break;
 				case '!link':
-					$client.say($data.room, $func.stations.link(arg.trim()));
+					$log.log('received link command from ' + from);
+					if (args.length > 1) $client.say($data.room, $func.stations.link(args[1]));
 					break;
 				case '!listen':
 					$client.say($data.room, 'http://websdr.ewi.utwente.nl:8901/');
