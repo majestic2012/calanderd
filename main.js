@@ -244,7 +244,8 @@ var ivo = (function() {
 
 				nextEvents.forEach(function(evt) {
 					var format = $func.format.event(evt.title);
-					if (typeof(evt.frequency) !== 'undefined' && evt.frequency.length > 3) {
+					// Don't give a link for "Target", as "Target" implies that the TX can NOT be heard on UTwente. (most of the time at least)
+					if (typeof(evt.frequency) !== 'undefined' && evt.frequency.length > 3 && evt.title.indexOf('Target') === -1) {
 						var freq = evt.frequency;
 						var mode = '';
 						switch (evt.mode) {
@@ -489,13 +490,19 @@ var ivo = (function() {
 					$func.client.getCalendarData();
 					break;
 				case '!why':
-					$client.say($data.room, 'The Buzzer is not audible at this time of the day in the Netherlands due to HF propagation characteristics. Try again later in the local evening.');
+					$client.say($data.room, 'The Buzzer is not audible at this time of the day due to HF propagation characteristics. Try again later in the local evening.');
 					break;
 				case '!new':
 					$client.say($data.room, 'You can visit our site at http://priyom.org where we have a good read regarding any and all information about logged numbers stations.');
 					break;
 				case '!rules':
 					$client.say($data.room, 'http://priyom.org/about/irc-rules');
+					break;
+				case '!rivet':
+					$client.say($data.room, 'http://www.apul64.dsl.pipex.com/enigma2000/rivet/index.html');
+					break;
+				case '!utc':
+					$client.say($data.room, (new Date()).toUTCString());
 					break;
 			}
 		});
