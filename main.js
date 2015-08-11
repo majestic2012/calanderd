@@ -49,6 +49,7 @@ var ivo = (function() {
 	// data storage object
 	var $data = {
 		data: (process.env.calendard_data === 'mock' ? 'mock' : 'google'),
+		dataReady: false,
 		dev: (process.env.calendard === 'dev'),
 		events: [],
 		hasRoom: false,
@@ -177,6 +178,15 @@ var ivo = (function() {
 				$log.log('sorting events...');
 				events.sort(compareTimes);
 
+				// get rid of events which have already occurred
+				// (we have to do this because we stupidly operate on two sets of completely different event elements)
+				var newEvents = [];
+				var now = Math.floor(new Date().getTime()/1000);
+				events.forEach(function(el) {
+					if (Math.floor(new Date(el.start.dateTime).getTime()/1000) > now) newEvents.push(el);
+				});
+				events = newEvents;
+
 				$log.log('number of events found: ' + events.length);
 				$log.log('time of first event: ' + events[0].start.dateTime);
 				// flush event cache
@@ -202,6 +212,10 @@ var ivo = (function() {
 					}, timer);
 					$data.events.push(event);
 				});
+				if (!$data.dataReady) {
+					if ($data.hasRoom) $client.say($data.room, 'Done loading events...');
+					$data.dataReady = true;
+				}
 				if ($data.hasRoom) $func.client.onReady();
 				return true;
 			},
@@ -271,9 +285,9 @@ var ivo = (function() {
 			},
 			update: function() {
 				var newEvents = [];
-				var now = new Date();
+				var now = Math.floor(new Date().getTime()/1000);
 				$data.events.forEach(function(el) {
-					if (el.eventDate > now) newEvents.push(el);
+					if (Math.floor(new Date(el.eventDate).getTime()/1000) > now) newEvents.push(el);
 				});
 				$data.events = newEvents;
 				// get more events!
@@ -472,8 +486,7 @@ var ivo = (function() {
 				case '!next':
 				case '!n':
 					$log.log('received next command from ' + from);
-					$func.events.sayNext();
-					break;
+					return $data.dataReady ? $func.events.sayNext() : $client.say($data.room, "I'm still retrieving the newest events...");
 				case '!stream':         
 					$client.say($data.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
 					break;
@@ -486,6 +499,7 @@ var ivo = (function() {
 					break;
 				case '!reload':
 					$client.say($data.room, 'Reloading...');
+					$data.dataReady = false;
 					$log.log('refreshing events list...');
 					$func.client.getCalendarData();
 					break;
