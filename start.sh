@@ -1,3 +1,3 @@
 #!/bin/bash
 
-forever main.js 
+forever main.js

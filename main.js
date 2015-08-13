@@ -18,7 +18,7 @@ var ivo = (function() {
 	var moment = require('moment');
 	var colors = config.color ? require('irc-colors') : null;
 
-	// event timer aggregator. allows multiple events with timers ending at the 
+	// event timer aggregator. allows multiple events with timers ending at the
 	// same time to notify the channel in a single message instead of individually.
 	var $aggregator = (function() {
 		var events = [];
@@ -138,13 +138,13 @@ var ivo = (function() {
 			getCalendarData: function() {
 				$log.log('asking Google for data...');
 				// set date for request
-				$data.calendarUrl = "https://www.googleapis.com/calendar/v3/calendars/" + 
-					config.calendarId + 
-					"@group.calendar.google.com/events?orderBy=startTime&singleEvents=true&timeMin=" + 
+				$data.calendarUrl = "https://www.googleapis.com/calendar/v3/calendars/" +
+					config.calendarId +
+					"@group.calendar.google.com/events?orderBy=startTime&singleEvents=true&timeMin=" +
 					new Date().toISOString() +
-					"&fields=items(start%2Csummary)%2Csummary&key=" + 
-					config.apiKey + 
-					"&maxResults=" + 
+					"&fields=items(start%2Csummary)%2Csummary&key=" +
+					config.apiKey +
+					"&maxResults=" +
 					config.maxResults;
 				https.get($data.calendarUrl, function (res) {
 					$log.log('  - http request got statusCode: ' + res.statusCode);
@@ -487,7 +487,7 @@ var ivo = (function() {
 				case '!n':
 					$log.log('received next command from ' + from);
 					return $data.dataReady ? $func.events.sayNext() : $client.say($data.room, "I'm still retrieving the newest events...");
-				case '!stream':         
+				case '!stream':
 					$client.say($data.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
 					break;
 				case '!link':
