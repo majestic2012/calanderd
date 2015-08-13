@@ -53,7 +53,6 @@ var ivo = (function() {
 		dev: (process.env.calendard === 'dev'),
 		events: [],
 		hasRoom: false,
-		hasEvents: false,
 		isReady: false,
 		regex: {
 			morse: /^M\d+[a-z]?$/,
