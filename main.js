@@ -264,6 +264,11 @@ var ivo = (function() {
 						var freq = evt.frequency;
 						var mode = '';
 						switch (evt.mode) {
+							case 'RTTY':
+								// Give it as USB with the center frequency at +2 kHz
+								freq = freq-2;
+								break;
+
 							case 'CW':
 								// This makes the CW stations +1000Hz on USB.
 								freq = freq-1;
