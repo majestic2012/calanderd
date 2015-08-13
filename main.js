@@ -497,7 +497,6 @@ var ivo = (function() {
 					$client.say($data.room, 'http://websdr.ewi.utwente.nl:8901/');
 					break;
 				case '!reload':
-					$client.say($data.room, 'Reloading...');
 					$data.dataReady = false;
 					$log.log('refreshing events list...');
 					$func.client.getCalendarData();
