@@ -54,14 +54,11 @@ var ivo = (function() {
 		events: [],
 		hasRoom: false,
 		regex: {
-			FSK: /^F\d+[a-z]?$/,
+			digital: /^(XP[A-Z]*\d*|(F|HM)\d+)[a-z]?$/,
 			morse: /^M\d+[a-z]?$/,
 			voice: /^[EGSV]\d+[a-z]?$/
 		},
 		room: process.env.calendard === 'dev' ? config.dev.room : config.room,
-		station: {
-			digital: [ 'XPA', 'XPA2', 'HM01' ]
-		},
 		timers: {
 			eventCheck: true,
 			pong: null
@@ -313,7 +310,7 @@ var ivo = (function() {
 			station: function( match, name, rest ) {
 				if (!config.color) return match;
 				var cname;
-				if ($data.station.digital.indexOf(name) > -1 || $data.regex.FSK.test(name)) {
+				if ($data.regex.digital.test(name)) {
 					cname = colors.red(name);
 				} else if ($data.regex.morse.test(name)) {
 					cname = colors.purple(name);
