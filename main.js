@@ -263,6 +263,7 @@ var ivo = (function() {
 						var mode = '';
 						switch (evt.mode) {
 							case 'RTTY':
+							case 'RTTY/CW':
 								// Give it as USB with the center frequency at +2 kHz
 								freq = freq-2;
 								break;
