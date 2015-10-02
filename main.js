@@ -53,7 +53,6 @@ var ivo = (function() {
 		dev: (process.env.calendard === 'dev'),
 		events: [],
 		hasRoom: false,
-		isReady: false,
 		regex: {
 			FSK: /^F\d+[a-z]?$/,
 			morse: /^M\d+[a-z]?$/,
@@ -222,7 +221,6 @@ var ivo = (function() {
 			},
 			onReady: function() {
 				$log.log('system ready!');
-				$data.isReady = true;
 			}
 		},
 		events: {
