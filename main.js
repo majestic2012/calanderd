@@ -52,7 +52,6 @@ var ivo = (function() {
 		dataReady: false,
 		dev: (process.env.calendard === 'dev'),
 		events: [],
-		hasRoom: false,
 		regex: {
 			digital: /^(XP[A-Z]*\d*|(F|HM)\d+)[a-z]?$/,
 			morse: /^M\d+[a-z]?$/,
@@ -205,19 +204,16 @@ var ivo = (function() {
 						timer: null
 					};
 					event.timer = setTimeout(function() {
-						if ($data.hasRoom) $aggregator.push(event);
+						$aggregator.push(event);
 					}, timer);
 					$data.events.push(event);
 				});
 				if (!$data.dataReady) {
-					if ($data.hasRoom) $client.say($data.room, 'Done loading events...');
+					$client.say($data.room, 'Done loading events...');
 					$data.dataReady = true;
 				}
-				if ($data.hasRoom) $func.client.onReady();
-				return true;
-			},
-			onReady: function() {
 				$log.log('system ready!');
+				return true;
 			}
 		},
 		events: {
@@ -283,7 +279,7 @@ var ivo = (function() {
 				return (header + formattedEvents.join(" • "));
 			},
 			sayNext: function() {
-				if ($data.hasRoom) return $client.say($data.room, $func.events.getNextEvent());
+				return $client.say($data.room, $func.events.getNextEvent());
 			},
 			update: function() {
 				var newEvents = [];
@@ -468,15 +464,14 @@ var ivo = (function() {
 			$log.log('calendard on server');
 
 			$client.join($data.room, function (input) {
-				$data.hasRoom = true;
-
 				$log.log('channel connection is ready!');
 
 				$data.timers.pong = setInterval(function () {
 					$client.send('PONG', 'empty');
 				}, 2 * 60 * 1000);
 
-				if ($data.hasRoom) setTimeout($func.announcements.check, 5000);
+				$func.client.getCalendarData();
+				setTimeout($func.announcements.check, 5000);
 			});
 		});
 		$client.addListener('message' + $data.room, function (from, to, message) {
@@ -522,7 +517,6 @@ var ivo = (function() {
 		$client.addListener('error', function (message) {
 			$log.error('[!] IRC CLIENT ERROR: ', message);
 		});
-		$func.client.getCalendarData();
 	};
 
 	// if we're called with require(), it's test tiem! otherwise fire it up
