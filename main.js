@@ -163,14 +163,6 @@ var ivo = (function() {
 				});
 			},
 			onHttpReturn: function( events ) {
-				function compareTimes( a, b ) {
-					if (a.start.dateTime < b.start.dateTime) return -1;
-					if (a.start.dateTime > b.start.dateTime) return 1;
-					return 0;
-				};
-				$log.log('sorting events...');
-				events.sort(compareTimes);
-
 				// get rid of events which have already occurred
 				// (we have to do this because we stupidly operate on two sets of completely different event elements)
 				var newEvents = [];
