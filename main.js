@@ -59,7 +59,6 @@ var ivo = (function() {
 		},
 		room: process.env.calendard === 'dev' ? config.dev.room : config.room,
 		timers: {
-			eventCheck: true,
 			pong: null
 		},
 		types: []
@@ -124,9 +123,8 @@ var ivo = (function() {
 		},
 		announcements: {
 			check: function() {
-				// check if next timer is within 60 seconds, announce if it is
 				$func.events.update();
-				if ($data.timers.eventCheck) setTimeout($func.announcements.check, 60000);
+				setTimeout($func.announcements.check, 60000);
 			}
 		},
 		client: {
