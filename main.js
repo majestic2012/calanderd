@@ -99,7 +99,7 @@ var ivo = (function() {
 	var $func = {
 		__dev: {
 			getEvents: function( num, special ) {
-				// this function generates random events for testing, simulating http getCalendarData()
+				// this function generates random events for testing, simulating http fetchEvents()
 				// special {boolean} will return array of events all having the same event date +60s, for testing event time collision handler
 				function _getEvent( time ) {
 					return {
@@ -128,7 +128,7 @@ var ivo = (function() {
 			}
 		},
 		client: {
-			getCalendarData: function() {
+			fetchEvents: function() {
 				$log.log('asking Google for data...');
 				// set date for request
 				$data.calendarUrl = "https://www.googleapis.com/calendar/v3/calendars/" +
@@ -155,7 +155,7 @@ var ivo = (function() {
 							// if you want events with the same trigger time, add boolean true parameter to getEvents()
 							items: $func.__dev.getEvents(6)
 						} : JSON.parse(data);
-						if (typeof(obj) !== 'object' || $func.util.type(obj.items) !== 'array') $log.error('$func.client.getCalendarData(): improper return object. cannot proceed ['+JSON.stringify(obj)+']');
+						if (typeof(obj) !== 'object' || $func.util.type(obj.items) !== 'array') $log.error('$func.client.fetchEvents(): improper return object. cannot proceed ['+JSON.stringify(obj)+']');
 						$func.client.onHttpReturn(obj.items);
 					});
 				}).on('error', function (e) {
@@ -230,7 +230,7 @@ var ivo = (function() {
 				});
 
 				// this really shouldn't happen, but sure, just in case...
-				if (nextEvents.length === 0) return $func.client.getCalendarData(), '';
+				if (nextEvents.length === 0) return $func.client.fetchEvents(), '';
 
 				var first = moment(nextEvents[0].eventDate);
 				var time = first.utc().format('HH:mm');
@@ -279,7 +279,7 @@ var ivo = (function() {
 				});
 				$data.events = newEvents;
 				// get more events!
-				if ($data.events.length < 3) return $func.client.getCalendarData(), false;
+				if ($data.events.length < 3) return $func.client.fetchEvents(), false;
 			}
 		},
 		extract: {
@@ -460,7 +460,7 @@ var ivo = (function() {
 					$client.send('PONG', 'empty');
 				}, 2 * 60 * 1000);
 
-				$func.client.getCalendarData();
+				$func.client.fetchEvents();
 				setTimeout($func.announcements.check, 5000);
 			});
 		});
@@ -485,7 +485,7 @@ var ivo = (function() {
 				case '!reload':
 					$data.dataReady = false;
 					$log.log('refreshing events list...');
-					$func.client.getCalendarData();
+					$func.client.fetchEvents();
 					break;
 				case '!why':
 					$client.say($data.room, 'The Buzzer is not audible at this time of the day due to HF propagation characteristics. Try again later in the local evening.');
