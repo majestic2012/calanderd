@@ -212,9 +212,6 @@ var ivo = (function() {
 					clearTimeout(el.timer);
 				});
 			},
-			getNextDate: function() {
-				return $data.events[0].eventDate;
-			},
 			getNextEvent: function() {
 				// Based on original events code written by foo (UTwente-Usability/events.js)
 				var nextEvents = [];
