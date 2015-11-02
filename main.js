@@ -18,6 +18,34 @@ var ivo = (function() {
 	var moment = require('moment');
 	var colors = config.color ? require('irc-colors') : null;
 
+	// event timer aggregator. allows multiple events with timers ending at the
+	// same time to notify the channel in a single message instead of individually.
+	var $aggregator = (function() {
+		var events = [];
+		var open = true;
+		var fire = function() {
+			$func.events.sayNext();
+		};
+		var flush = function() {
+			events = [];
+		};
+		var push = function( evt ) {
+			if (open) {
+				open = false;
+				setTimeout(function() {
+					fire();
+					open = true;
+					flush();
+				}, 2500);
+			}
+			events.push(evt);
+		};
+		return {
+			flush: flush,
+			push: push
+		};
+	})();
+
 	// data storage object
 	var $data = {
 		data: (process.env.calendard_data === 'mock' ? 'mock' : 'google'),
@@ -31,7 +59,6 @@ var ivo = (function() {
 		},
 		room: process.env.calendard === 'dev' ? config.dev.room : config.room,
 		timers: {
-			announce: null,
 			pong: null
 		},
 		types: []
@@ -95,20 +122,9 @@ var ivo = (function() {
 			}
 		},
 		announcements: {
-			schedule: function() {
-				// Find next event that isn't supposed to have already been announced
-				var limit = (new Date()).getTime() + config.announceEarly;
-
-				var next = $func.events.search(limit + 1000);
-				if (next == null) return;
-
-				clearTimeout($data.timers.announce); // Safety net against race conditions
-				$data.timers.announce = setTimeout($func.announcements.announce, next.getTime() - limit);
-
-				$log.debug('next announcement scheduled for event at ' + next.toISOString());
-			},
-			announce: function() {
-				if ($func.events.sayNext()) $func.announcements.schedule();
+			check: function() {
+				$func.events.update();
+				setTimeout($func.announcements.check, 60000);
 			}
 		},
 		client: {
@@ -147,71 +163,57 @@ var ivo = (function() {
 				});
 			},
 			onHttpReturn: function( events ) {
+				// get rid of events which have already occurred
+				// (we have to do this because we stupidly operate on two sets of completely different event elements)
+				var newEvents = [];
+				var now = Math.floor(new Date().getTime()/1000);
+				events.forEach(function(el) {
+					if (Math.floor(new Date(el.start.dateTime).getTime()/1000) > now) newEvents.push(el);
+				});
+				events = newEvents;
+
 				$log.log('number of events found: ' + events.length);
 				$log.log('time of first event: ' + events[0].start.dateTime);
+				// flush event cache
+				$log.log('flushing old event cache...');
+				$data.events = [];
+				// flush old timers so we don't have multiple messages
+				$log.log('flushing old timers...');
+				$func.events.flushTimers();
 
-				var ev = [];
 				events.forEach(function(evt) {
+					var timer = new Date(evt.start.dateTime).getTime() - 60000 - new Date().getTime();
+					// if the event will occur in less than sixty seconds, send message now
+					if (timer < 60000) timer = 0;
 					var info = $func.extract.info(evt.summary);
 					var event = {
 						eventDate: new Date(evt.start.dateTime),
 						title: evt.summary,
 						frequency: info[0],
 						mode: info[1],
+						timer: null
 					};
-					ev.push(event);
+					event.timer = setTimeout(function() {
+						$aggregator.push(event);
+					}, timer);
+					$data.events.push(event);
 				});
-
-				// Atomically swap new events in
-				clearTimeout($data.timers.announce);
-				$data.events = ev;
-
 				if (!$data.dataReady) {
 					$client.say($data.room, 'Done loading events...');
 					$data.dataReady = true;
 				}
 				$log.log('system ready!');
-
-				$func.announcements.schedule();
+				return true;
 			}
 		},
 		events: {
-			search: function( after ) {
-				// Remove past events
-				var now = new Date();
-				while ($data.events[0] != null && $data.events[0].eventDate < now) {
-					$data.events.shift();
-				}
-
-				// Search future events
-				for (var i = 0; i < $data.events.length; i++) {
-
-					var date = $data.events[i].eventDate;
-					if (date.getTime() < after)
-						continue;
-
-					// Legacy check for running out of events
-					if ($data.events.length - i < 3)
-						break;
-
-					// Make sure we have all the events for that date
-					for (var j = i + 1; j < $data.events.length; j++) {
-						if ($data.events[j].eventDate > date) {
-							return date;
-						}
-					}
-					break;
-				}
-
-				// More events needed
-				$func.client.fetchEvents();
-				return null;
+			flushTimers: function() {
+				$data.events.forEach(function(el) {
+					clearTimeout(el.timer);
+				});
 			},
 			getNextEvent: function() {
 				// Based on original events code written by foo (UTwente-Usability/events.js)
-
-				if ($func.events.search(-1) == null) return null;
-
 				var nextEvents = [];
 				var lastTime = null;
 
@@ -223,6 +225,9 @@ var ivo = (function() {
 						return true;
 					}
 				});
+
+				// this really shouldn't happen, but sure, just in case...
+				if (nextEvents.length === 0) return $func.client.fetchEvents(), '';
 
 				var first = moment(nextEvents[0].eventDate);
 				var time = first.utc().format('HH:mm');
@@ -261,11 +266,17 @@ var ivo = (function() {
 				return (header + formattedEvents.join(" • "));
 			},
 			sayNext: function() {
-				var next = $func.events.getNextEvent();
-				if (next != null) return false;
-
-				$client.say($data.room, next);
-				return true;
+				return $client.say($data.room, $func.events.getNextEvent());
+			},
+			update: function() {
+				var newEvents = [];
+				var now = Math.floor(new Date().getTime()/1000);
+				$data.events.forEach(function(el) {
+					if (Math.floor(new Date(el.eventDate).getTime()/1000) > now) newEvents.push(el);
+				});
+				$data.events = newEvents;
+				// get more events!
+				if ($data.events.length < 3) return $func.client.fetchEvents(), false;
 			}
 		},
 		extract: {
@@ -447,6 +458,7 @@ var ivo = (function() {
 				}, 2 * 60 * 1000);
 
 				$func.client.fetchEvents();
+				setTimeout($func.announcements.check, 5000);
 			});
 		});
 		$client.addListener('message' + $data.room, function (from, to, message) {
@@ -456,8 +468,7 @@ var ivo = (function() {
 				case '!next':
 				case '!n':
 					$log.log('received next command from ' + from);
-					if (! $func.events.sayNext()) $client.say($data.room, "I'm still retrieving the newest events...");
-					break;
+					return $data.dataReady ? $func.events.sayNext() : $client.say($data.room, "I'm still retrieving the newest events...");
 				case '!stream':
 					$client.say($data.room, 'http://stream.priyom.org:8000/buzzer.ogg.m3u');
 					break;
